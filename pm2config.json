@@ -1,0 +1,18 @@
+{
+  "apps": [
+    {
+      "name": "voltron",
+      "script": "index.js",
+      "exec_mode": "fork",
+      "env": {
+        "NODE_ENV": "production"
+      },
+      "error_file": "/var/log/voltron/error.log",
+      "log_type": "raw",
+      "merge_logs": true,
+      "min_uptime": "5000",
+      "mex_restarts": "999999",
+      "max_memory_restart" : "400M"
+    }
+  ]
+}

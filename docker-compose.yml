@@ -18,7 +18,7 @@ services:
           - USER_GROUP=semanticWeb
           - USER_ID=1000
           - USER_GROUP_ID=1000
-        context: ./semanticWeb
+        context: .
         dockerfile: docker/Dockerfile
       expose:
         - "5858"
