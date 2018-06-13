@@ -1,0 +1,34 @@
+version: '3'
+
+services:
+  mongo3_4:
+      container_name: semantic_mongo_3_4
+      image: mongo:3.4
+      ports:
+        - "27017:27017"
+
+  semanticweb:
+      container_name: semanticWeb
+      build:
+        args:
+          - SERVICE_ENVIRONMENT=local
+          - NODE_GROUP_ID=1001
+          - NODE_USER_ID=1001
+          - USER_NAME=semanticWeb
+          - USER_GROUP=semanticWeb
+          - USER_ID=1000
+          - USER_GROUP_ID=1000
+        context: ./semanticWeb
+        dockerfile: docker/Dockerfile
+      expose:
+        - "5858"
+      ports:
+        - "8001:8001"
+      environment:
+        - HTTPS_METHOD=noredirect
+        - SEMANTICWEB_MONGO_URL=mongodb://mongo3_4:27017/semanticWeb
+        - SEMANTICWEB_REDIS_URL=redis://redis:6379
+        - SEMANTICWEB_TEST_MODE=true
+        - SWAGGER_OPTIONS_SWAGGERDEFINITION_HOST=172.22.0.3
+#      volumes:
+#        - ./semanticWeb:/home/semanticWeb/project:rw
