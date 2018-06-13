@@ -1,5 +1,5 @@
 const auth = {
-  uri: 'http://auth.instapagedev.com/api/v1/token/payload',
+  uri: '',
 };
 
 module.exports = {
