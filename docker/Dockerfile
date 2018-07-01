@@ -90,19 +90,15 @@ RUN apk add --no-cache \
 
 USER $USER_NAME:$USER_GROUP
 COPY . ./
-
-
 USER root:root
-RUN if [ "${SERVICE_ENVIRONMENT}" == "local" ] \
-    || [ "${SERVICE_ENVIRONMENT}" == "development" ] \
-  ; then \
-       chown -R $USER:$USER_GROUP $PROJECT_DIR \
-  ; fi
+RUN npm i
+
+
+RUN chown -R $USER:$USER_GROUP $PROJECT_DIR
 
 USER $USER_NAME:$USER_GROUP
 
 EXPOSE $SERVICE_SERVER_PORT
-
 
 CMD ["npm","run","start"]
 

@@ -7,20 +7,21 @@ const ToDoModel = require('../models/ToDo');
 const rdfFetch = require('rdf-fetch');
 const _ = require('lodash');
 const microdata = require('microdata-node');
+var parser = require('rdf-nx-parser');
+const JSONLDParser = require('rdf-parser-jsonld');
+const stringToStream = require('string-to-stream')
 
 const visitedUrls = new Map();
 const toBeVisitedUrls = new Map();
-const limit = 20;
+let limit = 20;
 
 function worker(object, cb) {
   Crawler.visitPage(object.url, object.type);
   cb(null);
 }
 
-//FIXME: domain is hardcoded
 let protocol;
 let domain;
-// FIXME: reset visitedURLs? or how to pass the limit ?
 
 class Crawler {
   static flushAllUrls() {
@@ -43,10 +44,17 @@ class Crawler {
     toBeVisitedUrls.delete(url);
     visitedUrls.set(url);
 
-    return rp(url);
+    const options = {
+      uri: url,
+      insecure: true,
+      rejectUnauthorized: false
+    };
+
+    return rp(options)
+      .catch(e => {});
   }
 
-  static getUrls(html, type) {
+  static getUrls(html, type, onlyDomain) {
     return Promise.resolve(html)
       .then((body) => {
         const $ = cheerio.load(body);
@@ -68,13 +76,20 @@ class Crawler {
             }
             const urlArray = linkHref.split('://');
 
+            let domainCondition;
+
+            if(onlyDomain === true) {
+              domainCondition = urlArray[1].startsWith(domain);
+            } else {
+              domainCondition = true;
+            }
+
             if (
               !(/\.(png|jpg|gif|js|pdf|css|ico)$/).test(linkHref)
               && urlArray.length === 2
-              && urlArray[1].startsWith(domain)
+              && domainCondition
               && !visitedUrls.has(linkHref)
               && !toBeVisitedUrls.has(linkHref)
-              // TODO: Possibly not needed condition
               && additionalCondition
             ) {
               toBeVisitedUrls.set(linkHref);
@@ -84,6 +99,7 @@ class Crawler {
                   type,
                 });
               } else {
+                console.log('Finished crawling: ', Date.now())
                 queue.kill();
               }
             }
@@ -108,7 +124,9 @@ class Crawler {
     return true;
   }
 
-  static visitPage(url, type) {
+  static visitPage(url, type, onlyDomain, limit) {
+    limit = limit;
+
     Promise.resolve(Crawler.getBody(url))
       .tap((body) => {
         let getData;
@@ -120,26 +138,28 @@ class Crawler {
 
         Promise.resolve(getData)
           .then((object) => {
-            if (object.length) {
+            if (_.isArray(object)) {
               let result = object;
-              if (type === 'jsonld') {
-                result = [JSON.stringify(object)];
+              try {
+                ToDoModel.create({
+                  url,
+                  body,
+                  object: result,
+                  type,
+                });
+              } catch (error) {
               }
-              ToDoModel.create({
-                url,
-                body,
-                object: result,
-                type,
-              });
             }
-          });
+          })
+          .catch(e => {})
       })
       .then((body) => {
         if (!body) {
           return false;
         }
-        return Crawler.getUrls(body, type);
-      });
+        return Crawler.getUrls(body, type, onlyDomain);
+      })
+      .catch(e => {});
   }
 
   static getRDFTripletObject(url) {
@@ -166,10 +186,31 @@ class Crawler {
 
   static getJSONLDdata(html, url) {
     return Promise.resolve(
-      microdata.toJsonld(html, {
-        base: url,
+      cheerio.load(html, {xml: true})
+    )
+    .then((data) => JSON.parse(data('script[type="application/ld+json"]')[0].children[0].data))
+    .then((data) => {
+      const parser = new JSONLDParser();
+
+      let stream = parser.import(stringToStream(JSON.stringify(data)))
+
+      let output = [];
+
+      return new Promise((resolve, reject) => {
+        stream.on('data', (triple) => {
+          output.push({
+            subject: triple['subject'].value,
+            predicate: triple['predicate'].value,
+            object: triple['object'].value
+          });
+        })
+
+        stream.on('end', () => {
+          resolve(output)
+        });
       })
-    );
+    })
+    .catch((e) => {})
   }
 
   static hasToBeVisitedUrl(url) {

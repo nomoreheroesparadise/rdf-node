@@ -24,11 +24,11 @@ services:
         - "5858"
       ports:
         - "8001:8001"
+        - "5858:5858"
       environment:
         - HTTPS_METHOD=noredirect
         - SEMANTICWEB_MONGO_URL=mongodb://mongo3_4:27017/semanticWeb
-        - SEMANTICWEB_REDIS_URL=redis://redis:6379
         - SEMANTICWEB_TEST_MODE=true
-        - SWAGGER_OPTIONS_SWAGGERDEFINITION_HOST=172.22.0.3
-#      volumes:
-#        - ./semanticWeb:/home/semanticWeb/project:rw
+        # - SWAGGER_OPTIONS_SWAGGERDEFINITION_HOST=172.22.0.3
+      volumes:
+        - ../rdf-node:/home/semanticWeb/project:rw

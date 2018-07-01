@@ -5,11 +5,11 @@ const ToDoModel = require('../models/ToDo');
 
 class ToDoController {
   static getToDos(req, res, next) {
-    const { url } = req.query;
+    const { url, onlyDomain, limit } = req.query;
     const type = 'rdf';
-
+    console.log('Started crawling: ', Date.now())
     Promise.resolve(flushAllUrls())
-      .then(visitPage(url, type))
+      .then(visitPage(url, type, onlyDomain, limit))
       .then(res.jsonOk());
 
     next();
@@ -22,11 +22,11 @@ class ToDoController {
   }
 
   static getJsonLd(req, res, next) {
-    const { url } = req.query;
+    const { url, onlyDomain, limit } = req.query;
     const type = 'jsonld';
-
+    console.log('Started crawling: ', Date.now())
     Promise.resolve(flushAllUrls())
-      .then(visitPage(url, type))
+      .then(visitPage(url, type, onlyDomain, limit))
       .then(res.jsonOk());
 
     next();
